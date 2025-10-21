@@ -1,5 +1,6 @@
 package br.com.projeto.gerador;
 
+import com.google.gson.JsonObject;
 import java.net.http.*;
 import java.net.URI;
 import java.time.Duration;
@@ -18,7 +19,8 @@ public class FhirClient {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(Config.FHIR_URL))
                     .header("Content-Type", "application/fhir+json")
-                    .header("User-Agent", "GeradorHemogramas/1.0")
+                    .header("Accept", "application/fhir+json")
+                    .header("User-Agent", "GeradorHemogramas/1.1")
                     .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
                     .timeout(Duration.ofSeconds(Config.HTTP_TIMEOUT))
                     .build();
