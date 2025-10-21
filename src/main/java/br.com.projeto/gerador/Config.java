@@ -1,9 +1,11 @@
 package br.com.projeto.gerador;
 
+import br.com.projeto.gerador.model.FaixaValores;
+
 import java.util.Map;
 
 public class Config {
-    // Configurações via environment variables com fallback
+    // URL do receptor FHIR
     public static final String FHIR_URL = System.getenv()
             .getOrDefault("FHIR_SERVER_URL", "http://localhost:8080/fhir/Bundle");
 
@@ -13,10 +15,12 @@ public class Config {
     public static final int HTTP_TIMEOUT = Integer.parseInt(
             System.getenv().getOrDefault("HTTP_TIMEOUT_SECONDS", "30"));
 
-    // Configurações dos exames (base + variação)
+    // Valores de referências pediátricas
     public static final Map<String, FaixaValores> EXAMES = Map.of(
-            "hemoglobina", new FaixaValores(13.0, 4.0),   // 13.0 ± 4.0
-            "hematocrito", new FaixaValores(38.0, 7.0),   // 38.0 ± 7.0
-            "leucocitos", new FaixaValores(4.0, 6.0)      // 4.0 ± 6.0
+            "hemoglobina", new FaixaValores(11.5, 1.5),
+            "hematocrito", new FaixaValores(34.0, 4.0),
+            "leucocitos", new FaixaValores(8.0, 4.0)
     );
+
+    public static final double PROBABILIDADE_ANEMIA = 0.15; // 15% de chance de anemia
 }

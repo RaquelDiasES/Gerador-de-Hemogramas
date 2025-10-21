@@ -3,6 +3,7 @@ package br.com.projeto.gerador;
 import com.google.gson.*;
 import java.nio.file.*;
 import java.io.IOException;
+import java.net.http.HttpResponse;
 
 public class EnvioHemogramaBundle {
 
