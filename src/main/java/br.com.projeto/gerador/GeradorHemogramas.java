@@ -5,12 +5,15 @@ import java.io.IOException;
 import java.net.http.HttpResponse;
 import java.nio.file.*;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.Period;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 public class GeradorHemogramas {
 
     private static final int QUANTIDADE = 100;
+    // Padrão ajustado para NÃO incluir o offset, conforme a última correção.
     private static final DateTimeFormatter DATE_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 
@@ -99,33 +102,75 @@ public class GeradorHemogramas {
     }
 
     private static void personalizarBundle(JsonObject bundle, String cpf, int index) {
-        // Atualizar ID do bundle
+        Random random = new Random();
+
+        // --- Geração do ID do Bundle ---
         String bundleId = "hemograma-" + UUID.randomUUID().toString();
+
+        // CORREÇÃO ESSENCIAL: Adicionar o 'id' na raiz do Bundle
+        bundle.addProperty("id", bundleId);
+
+        // Atualiza o 'identifier/value' (Padrão FHIR)
         if (bundle.has("identifier")) {
             bundle.getAsJsonObject("identifier").addProperty("value", bundleId);
         }
 
-        // Variar data de coleta (últimas 72h)
-        Random random = new Random();
-        int horasAtras = random.nextInt(72);
-        LocalDateTime dataColeta = LocalDateTime.now().minusHours(horasAtras);
-        String dataColetaStr = dataColeta.format(DATE_FORMATTER) + "-03:00";
+        // --- Geração de Datas e UUIDs ---
 
-        // Atualizar todas as observations
+        // Usar LocalDateTime, que não inclui fuso, para corresponder ao parser do Projeto 1.
+        int diasAtras = random.nextInt(6); // 0 a 5 dias
+        LocalDateTime dataColeta = LocalDateTime.now().minusDays(diasAtras);
+
+        String dataColetaStr = dataColeta.format(DATE_FORMATTER);
+
+        // 2. Geração da Data de Nascimento (0 a 5 anos = 1 a 60 meses)
+        int idadeSimuladaEmMeses = random.nextInt(60) + 1; // 1 a 60 meses
+
+        LocalDate dataNascimento = dataColeta.toLocalDate().minus(
+                Period.ofMonths(idadeSimuladaEmMeses));
+        String dataNascimentoStr = dataNascimento.toString();
+
+        // 3. Referências internas que precisam ser substituídas
+        final String patientUuidRef = "urn:uuid:PACIENTE-UUID-REF";
+        final String patientNewUuid = "urn:uuid:" + UUID.randomUUID().toString();
+
         JsonArray entries = bundle.getAsJsonArray("entry");
-        for (JsonElement entry : entries) {
-            JsonObject resource = entry.getAsJsonObject().getAsJsonObject("resource");
 
-            if (resource.get("resourceType").getAsString().equals("Observation")) {
-                // Atualizar CPF
+        for (JsonElement entry : entries) {
+            JsonObject entryObject = entry.getAsJsonObject();
+            JsonObject resource = entryObject.getAsJsonObject("resource");
+            String resourceType = resource.get("resourceType").getAsString();
+
+            if (resourceType.equals("Patient")) {
+                // ATUALIZAÇÕES NO RECURSO PATIENT
+
+                // 1. Atualizar CPF
+                JsonObject identifier = resource.getAsJsonArray("identifier").get(0).getAsJsonObject();
+                identifier.addProperty("value", cpf);
+
+                // 2. Atualizar Data de Nascimento (essencial para o cálculo da idade)
+                resource.addProperty("birthDate", dataNascimentoStr);
+
+                // 3. Atualizar o fullUrl do Patient com o novo UUID
+                entryObject.addProperty("fullUrl", patientNewUuid);
+
+                System.out.println("👶 Paciente: CPF " + cpf + ", Data Nasc: " + dataNascimentoStr + " (" + idadeSimuladaEmMeses + " meses)");
+
+
+            } else if (resourceType.equals("Observation")) {
+
+                // ATUALIZAÇÕES NOS RECURSOS OBSERVATION
+
+                // 1. Atualizar a referência 'subject' para o novo UUID do Patient
                 if (resource.has("subject")) {
                     JsonObject subject = resource.getAsJsonObject("subject");
-                    if (subject.has("identifier")) {
-                        subject.getAsJsonObject("identifier").addProperty("value", cpf);
+                    // O template corrigido deve ter a referência placeholder
+                    if (subject.has("reference") && subject.get("reference").getAsString().equals(patientUuidRef)) {
+                        subject.addProperty("reference", patientNewUuid);
                     }
                 }
 
-                // Atualizar data de coleta
+                // 2. Atualizar data de coleta na Observation (na parte 'contained' Specimen)
                 if (resource.has("contained")) {
                     JsonArray contained = resource.getAsJsonArray("contained");
                     for (JsonElement cont : contained) {
@@ -136,6 +181,9 @@ public class GeradorHemogramas {
                         }
                     }
                 }
+
+                // 3. Atualizar effectiveDateTime (hora da coleta da Observation)
+                resource.addProperty("effectiveDateTime", dataColetaStr);
             }
         }
     }
