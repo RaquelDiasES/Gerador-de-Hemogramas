@@ -2,7 +2,8 @@ package br.com.projeto.gerador;
 
 import com.google.gson.*;
 import br.com.projeto.gerador.model.FaixaValores;
-import java.util.Map;
+
+import java.util.Random;
 
 public class HemogramaSimulator {
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -26,12 +27,33 @@ public class HemogramaSimulator {
 
     private static void simularExame(JsonObject resource, String exameId) {
         FaixaValores faixa = Config.EXAMES.get(exameId);
-        double novoValor = faixa.gerarValorSimulado();
+
+        Random random = new Random();
+        int tipoAnemia = random.nextInt(3);
+        double novoValor;
+
+        switch (tipoAnemia) {
+            case 0:
+                novoValor = 10.0 + random.nextDouble() * 2.0;
+                break;
+            case 1:
+                novoValor = 8.0 + random.nextDouble() * 2.0;
+                break;
+            case 2:
+                novoValor = 5.0 + random.nextDouble() * 3.0;
+                break;
+            default:
+                novoValor = faixa.gerarValorSimulado();
+        }
 
         JsonObject valueQuantity = resource.getAsJsonObject("valueQuantity");
         valueQuantity.addProperty("value", Math.round(novoValor * 100.0) / 100.0); // 2 casas decimais
 
-        System.out.println("🔄 " + exameId + ": " + valueQuantity.get("value").getAsString());
+        // Adiciona classificação de anemia como Observation.note ou extension, se desejar
+        resource.addProperty("anemiaClassification", tipoAnemia == 0 ? "leve" : tipoAnemia == 1 ? "moderado" : "grave");
+
+        System.out.println("🔄 " + exameId + ": " + valueQuantity.get("value").getAsString() +
+                " (" + (tipoAnemia == 0 ? "leve" : tipoAnemia == 1 ? "moderado" : "grave") + ")");
     }
 
     public static String bundleParaJson(JsonObject bundle) {

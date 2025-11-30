@@ -7,7 +7,7 @@ import java.util.Map;
 public class Config {
     // URL do receptor FHIR
     public static final String FHIR_URL = System.getenv()
-            .getOrDefault("FHIR_SERVER_URL", "http://localhost:8080/monitoramento/hemograma");
+            .getOrDefault("FHIR_SERVER_URL", "http://localhost:8080/fhir/Bundle");
 
     public static final String BUNDLE_PATH = System.getenv()
             .getOrDefault("BUNDLE_TEMPLATE_PATH", "src/main/resources/Bundle-hemograma-completo.json");
