@@ -47,9 +47,8 @@ public class HemogramaSimulator {
         }
 
         JsonObject valueQuantity = resource.getAsJsonObject("valueQuantity");
-        valueQuantity.addProperty("value", Math.round(novoValor * 100.0) / 100.0); // 2 casas decimais
+        valueQuantity.addProperty("value", Math.round(novoValor * 100.0) / 100.0);
 
-        // Adiciona classificação de anemia como Observation.note ou extension, se desejar
         resource.addProperty("anemiaClassification", tipoAnemia == 0 ? "leve" : tipoAnemia == 1 ? "moderado" : "grave");
 
         System.out.println("🔄 " + exameId + ": " + valueQuantity.get("value").getAsString() +

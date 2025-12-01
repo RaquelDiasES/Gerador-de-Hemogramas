@@ -31,7 +31,6 @@ public class GeradorHemogramas {
             int sucessos = 0;
             int falhas = 0;
 
-            // Gerar CPFs únicos
             List<String> cpfs = gerarCPFsUnicos(QUANTIDADE);
 
             for (int i = 0; i < QUANTIDADE; i++) {
@@ -118,16 +117,25 @@ public class GeradorHemogramas {
         // --- Geração de Datas e UUIDs ---
 
         // Usar LocalDateTime, que não inclui fuso, para corresponder ao parser do Projeto 1.
-        int diasAtras = random.nextInt(6); // 0 a 5 dias
+        int diasAtras = random.nextInt(365); // coleta em qualquer dia do último ano
         LocalDateTime dataColeta = LocalDateTime.now().minusDays(diasAtras);
-
         String dataColetaStr = dataColeta.format(DATE_FORMATTER);
 
-        // 2. Geração da Data de Nascimento (0 a 5 anos = 1 a 60 meses)
-        int idadeSimuladaEmMeses = random.nextInt(60) + 1; // 1 a 60 meses
+        int idadeMeses;
+        double sorte = random.nextDouble();
 
-        LocalDate dataNascimento = dataColeta.toLocalDate().minus(
-                Period.ofMonths(idadeSimuladaEmMeses));
+        if (sorte < 0.2) {
+            // 0-11 meses (20% dos casos)
+            idadeMeses = random.nextInt(12);
+        } else if (sorte < 0.6) {
+            // 1-4 anos (12-59 meses, 40% dos casos)
+            idadeMeses = random.nextInt(48) + 12;
+        } else {
+            // 5-11 anos (60-143 meses, 40% dos casos)
+            idadeMeses = random.nextInt(84) + 60;
+        }
+
+        LocalDate dataNascimento = dataColeta.toLocalDate().minus(Period.ofMonths(idadeMeses));
         String dataNascimentoStr = dataNascimento.toString();
 
         // 3. Referências internas que precisam ser substituídas
@@ -154,12 +162,10 @@ public class GeradorHemogramas {
                 // 3. Atualizar o fullUrl do Patient com o novo UUID
                 entryObject.addProperty("fullUrl", patientNewUuid);
 
-                System.out.println("👶 Paciente: CPF " + cpf + ", Data Nasc: " + dataNascimentoStr + " (" + idadeSimuladaEmMeses + " meses)");
+                System.out.println("👶 Paciente: CPF " + cpf + ", Data Nasc: " + dataNascimentoStr + " (" + idadeMeses + " meses)");
 
 
             } else if (resourceType.equals("Observation")) {
-
-                // ATUALIZAÇÕES NOS RECURSOS OBSERVATION
 
                 // 1. Atualizar a referência 'subject' para o novo UUID do Patient
                 if (resource.has("subject")) {
